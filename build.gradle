@@ -69,7 +69,7 @@ jacocoTestReport {
     dependsOn test
 }
 
-tasks.jacocoTestReport { reports { xml.required.set(true) } }
+jacocoTestReport { reports { xml.required.set(true) } }
 check.dependsOn jacocoTestCoverageVerification
 
 sentry {
@@ -80,6 +80,6 @@ sentry {
     authToken = System.getenv("SENTRY_AUTH_TOKEN")
 }
 
-tasks.sentryBundleSourcesJava {
+sentryBundleSourcesJava {
     enabled = System.getenv("SENTRY_AUTH_TOKEN") != null
 }

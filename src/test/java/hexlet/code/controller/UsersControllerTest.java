@@ -1,10 +1,11 @@
-package hexlet.code;
+package hexlet.code.controller;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -16,11 +17,13 @@ import java.util.HashMap;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import hexlet.code.dto.user.UserDTO;
+import hexlet.code.dto.user.UserUpdateDTO;
 import hexlet.code.mapper.UserMapper;
 import org.assertj.core.api.Assertions;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -98,6 +101,19 @@ public class UsersControllerTest {
     }
 
     @Test
+    public void testShow() throws Exception {
+        var request = get("/api/users/" + testUser.getId()).with(jwt());
+        var result = mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andReturn();
+        var body = result.getResponse().getContentAsString();
+        assertThatJson(body).and(
+                v -> v.node("email").isEqualTo(testUser.getEmail()),
+                v -> v.node("firstName").isEqualTo(testUser.getFirstName()),
+                v -> v.node("lastName").isEqualTo(testUser.getLastName()));
+    }
+
+    @Test
     public void testCreate() throws Exception {
         var data = Instancio.of(modelGenerator.getUserModel())
                 .create();
@@ -136,15 +152,54 @@ public class UsersControllerTest {
     }
 
     @Test
-    public void testShow() throws Exception {
-        var request = get("/api/users/" + testUser.getId()).with(jwt());
+    public void testIndexWithoutAuth() throws Exception {
+        var result = mockMvc.perform(get("/api/users"))
+                .andExpect(status().isUnauthorized());
+
+    }
+
+    @Test
+    public void testShowWithoutAuth() throws Exception {
+        var request = get("/api/users/" + testUser.getId());
         var result = mockMvc.perform(request)
-                .andExpect(status().isOk())
-                .andReturn();
-        var body = result.getResponse().getContentAsString();
-        assertThatJson(body).and(
-                v -> v.node("email").isEqualTo(testUser.getEmail()),
-                v -> v.node("firstName").isEqualTo(testUser.getFirstName()),
-                v -> v.node("lastName").isEqualTo(testUser.getLastName()));
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void testUpdateAnotherUser() throws Exception {
+        var user = Instancio.of(modelGenerator.getUserModel())
+                .create();
+        userRepository.save(user);
+
+        var newFirstName = "updated firstname";
+        var updatedDTO = new UserUpdateDTO();
+        updatedDTO.setFirstName(JsonNullable.of(newFirstName));
+
+        var request = put("/api/users/{id}", user.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(updatedDTO))
+                .with(token);
+
+        mockMvc.perform(request).andExpect(status().isInternalServerError());
+
+        var userFromRepo = userRepository.findByEmail(user.getEmail()).get();
+
+        assertThat(userFromRepo).isNotNull();
+        assertThat(userFromRepo.getFirstName()).isEqualTo(user.getFirstName());
+        assertThat(userFromRepo.getLastName()).isEqualTo(user.getLastName());
+        assertThat(userFromRepo.getEmail()).isEqualTo(user.getEmail());
+    }
+
+    @Test
+    public void testDestroyAnotherUser() throws Exception {
+        var user = Instancio.of(modelGenerator.getUserModel())
+                .create();
+        userRepository.save(user);
+
+        var request = delete("/api/users/{id}", user.getId()).with(token);
+        mockMvc.perform(request)
+                .andExpect(status().isInternalServerError());
+
+        Assertions.assertThat(userRepository.existsById(user.getId())).isTrue();
     }
 }

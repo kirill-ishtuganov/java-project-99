@@ -2,11 +2,11 @@ package hexlet.code.controller;
 
 import java.util.List;
 
-import hexlet.code.dto.user.UserCreateDTO;
-import hexlet.code.dto.user.UserDTO;
-import hexlet.code.dto.user.UserUpdateDTO;
-import hexlet.code.mapper.UserMapper;
-import hexlet.code.repository.UserRepository;
+import hexlet.code.dto.task_status.TaskStatusCreateDTO;
+import hexlet.code.dto.task_status.TaskStatusDTO;
+import hexlet.code.dto.task_status.TaskStatusUpdateDTO;
+import hexlet.code.mapper.TaskStatusMapper;
+import hexlet.code.repository.TaskStatusRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,54 +25,49 @@ import jakarta.validation.Valid;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("/api/users")
-public class UserController {
-    private UserRepository repository;
-    private UserMapper userMapper;
-    private static final String ONLY_OWNER = """
-                @userRepository.findById(#id).get().getEmail() == authentication.getName()
-            """;
+@RequestMapping("/api/task_statuses")
+public class TaskStatusController {
+    private final TaskStatusRepository repository;
+    private final TaskStatusMapper statusMapper;
 
     @GetMapping("")
-    ResponseEntity<List<UserDTO>> index() {
-        var users = repository.findAll();
-        var result = users.stream()
-                .map(userMapper::map)
+    ResponseEntity<List<TaskStatusDTO>> index() {
+        var statuses = repository.findAll();
+        var result = statuses.stream()
+                .map(statusMapper::map)
                 .toList();
         return ResponseEntity.ok()
-                .header("X-Total-Count", String.valueOf(users.size()))
+                .header("X-Total-Count", String.valueOf(statuses.size()))
                 .body(result);
     }
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
-    public UserDTO create(@Valid @RequestBody UserCreateDTO userData) {
-        var user = userMapper.map(userData);
-        repository.save(user);
-        return userMapper.map(user);
+    public TaskStatusDTO create(@Valid @RequestBody TaskStatusCreateDTO statusData) {
+        var status = statusMapper.map(statusData);
+        repository.save(status);
+        return statusMapper.map(status);
     }
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public UserDTO show(@PathVariable Long id) {
-        var user = repository.findById(id)
+    public TaskStatusDTO show(@PathVariable Long id) {
+        var status = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Not Found: " + id));
-        return userMapper.map(user);
+        return statusMapper.map(status);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize(ONLY_OWNER)
     @ResponseStatus(HttpStatus.OK)
-    public UserDTO update(@RequestBody @Valid UserUpdateDTO userData, @PathVariable Long id) {
-        var user = repository.findById(id)
+    public TaskStatusDTO update(@RequestBody @Valid TaskStatusUpdateDTO statusData, @PathVariable Long id) {
+        var status = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Not Found: " + id));
-        userMapper.update(userData, user);
-        repository.save(user);
-        return userMapper.map(user);
+        statusMapper.update(statusData, status);
+        repository.save(status);
+        return statusMapper.map(status);
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize(ONLY_OWNER)
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         repository.deleteById(id);

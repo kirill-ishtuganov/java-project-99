@@ -1,17 +1,15 @@
 package hexlet.code.component;
 
-import hexlet.code.service.CustomUserDetailsService;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
-
+import hexlet.code.service.CustomUserDetailsService;
 import hexlet.code.model.User;
 import lombok.AllArgsConstructor;
 
 @Component
 @AllArgsConstructor
 public class DataInitializer implements ApplicationRunner {
-
     private final CustomUserDetailsService userService;
 
     @Override

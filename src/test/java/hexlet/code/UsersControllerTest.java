@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import hexlet.code.dto.userDTO.UserDTO;
+import hexlet.code.dto.user.UserDTO;
 import hexlet.code.mapper.UserMapper;
 import org.assertj.core.api.Assertions;
 import org.instancio.Instancio;
@@ -120,10 +120,11 @@ public class UsersControllerTest {
     public void testUpdate() throws Exception {
 
         var data = new HashMap<>();
+        var token2 = jwt().jwt(builder -> builder.subject(testUser.getEmail()));
         data.put("firstName", "Mike");
 
         var request = put("/api/users/" + testUser.getId())
-                .with(token)
+                .with(token2)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(om.writeValueAsString(data));
 

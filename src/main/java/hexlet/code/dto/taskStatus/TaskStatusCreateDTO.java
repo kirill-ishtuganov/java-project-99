@@ -1,10 +1,13 @@
 package hexlet.code.dto.taskStatus;
 
+import hexlet.code.model.Task;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.List;
 
 
 @Setter
@@ -17,5 +20,6 @@ public class TaskStatusCreateDTO {
     private String name;
     @NotBlank
     private String slug;
+    private List<Task> tasks;
 
 }

@@ -2,8 +2,7 @@ package hexlet.code.controller;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -193,6 +192,6 @@ public class UsersControllerTest {
         mockMvc.perform(request)
                 .andExpect(status().isForbidden());
 
-        assertThat(userRepository.existsById(testUser2.getId()));
+        assertTrue(userRepository.existsById(testUser2.getId()));
     }
 }

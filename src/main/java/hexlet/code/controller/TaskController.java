@@ -4,9 +4,11 @@ import java.util.List;
 
 import hexlet.code.dto.task.TaskCreateDTO;
 import hexlet.code.dto.task.TaskDTO;
+import hexlet.code.dto.task.TaskParamsDTO;
 import hexlet.code.dto.task.TaskUpdateDTO;
 import hexlet.code.mapper.TaskMapper;
 import hexlet.code.repository.TaskRepository;
+import hexlet.code.specification.TaskSpecification;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,17 +24,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-
 @RestController
 @AllArgsConstructor
 @RequestMapping("/api/tasks")
 public class TaskController {
     private final TaskRepository repository;
     private TaskMapper taskMapper;
+    private TaskSpecification taskSpecification;
 
     @GetMapping("")
-    public ResponseEntity<List<TaskDTO>> index() {
-        var tasks = repository.findAll();
+    public ResponseEntity<List<TaskDTO>> index(TaskParamsDTO params) {
+        var spec = taskSpecification.build(params);
+        var tasks = repository.findAll(spec);
         var result = tasks.stream()
                 .map(taskMapper::map)
                 .toList();
@@ -40,7 +43,6 @@ public class TaskController {
                 .header("X-Total-Count", String.valueOf(tasks.size()))
                 .body(result);
     }
-
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)

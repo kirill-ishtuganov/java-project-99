@@ -2,6 +2,7 @@ package hexlet.code.controller;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -9,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import hexlet.code.dto.task.TaskCreateDTO;
+import hexlet.code.dto.taskStatus.TaskStatusCreateDTO;
 import hexlet.code.exception.ResourceNotFoundException;
 import hexlet.code.mapper.TaskMapper;
 import hexlet.code.model.Label;
@@ -29,7 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -70,7 +72,7 @@ public class TaskControllerTests {
     private TaskStatus testStatus;
     private Task testTask;
     private Label testLabel;
-    private SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor token;
+    private JwtRequestPostProcessor token;
 
     @BeforeEach
     public void setUp() {
@@ -98,6 +100,7 @@ public class TaskControllerTests {
     public void clean() {
         taskRepository.deleteAll();
         taskStatusRepository.deleteAll();
+        labelRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -109,6 +112,41 @@ public class TaskControllerTests {
 
         var body = result.getResponse().getContentAsString();
         assertThatJson(body).isArray();
+    }
+
+    @Test
+    public void testIndexWithFilter() throws Exception {
+        var user = Instancio.of(modelGenerator.getUserModel())
+                .create();
+        userRepository.save(user);
+
+        var status = new TaskStatus();
+        status.setName("TestStatus");
+        status.setSlug("forTest");
+        taskStatusRepository.save(status);
+
+        var label = new Label();
+        label.setName("testLabel");
+        labelRepository.save(label);
+
+        var task = new Task();
+        task.setName("TaskName");
+        task.setAssignee(user);
+        task.setTaskStatus(status);
+        task.setLabels(Set.of(label));
+        taskRepository.save(task);
+
+        var result = mockMvc.perform(get(
+                "/api/tasks?titleCont=TaskName&assigneeId={id}&status=forTest&labelId={labId}",
+                        user.getId(), label.getId())
+                        .with(token))
+                .andExpect(status().isOk())
+                .andReturn();
+        var body = result.getResponse().getContentAsString();
+
+        assertTrue(body.contains(user.getId().toString()));
+        assertTrue(body.contains(status.getSlug()));
+        assertTrue(body.contains(label.getId().toString()));
     }
 
     @Test
@@ -203,15 +241,16 @@ public class TaskControllerTests {
 
         mockMvc.perform(request).andExpect(status().isMethodNotAllowed());
 
-        assertThat(userRepository.existsById(testUser2.getId()));
+        assertTrue(userRepository.existsById(testUser2.getId()));
     }
 
     @Test
     public void testDeleteLabelWithDependencies() throws Exception {
         testTask.setLabels(Set.of(testLabel));
+        taskRepository.save(testTask);
         var request = delete("/api/labels/" + testLabel.getId()).with(jwt());
-        mockMvc.perform(request).andExpect(status().isNoContent());
+        mockMvc.perform(request).andExpect(status().isMethodNotAllowed());
 
-        assertThat(labelRepository.existsById(testLabel.getId()));
+        assertTrue(labelRepository.existsById(testLabel.getId()));
     }
 }

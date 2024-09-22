@@ -2,6 +2,7 @@ package hexlet.code.controller;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -130,7 +131,7 @@ public class LabelsControllerTest {
         var request = delete("/api/labels/" + testLabel.getId()).with(jwt());
         mockMvc.perform(request).andExpect(status().isNoContent());
 
-        Assertions.assertThat(labelRepository.existsById(testLabel.getId())).isFalse();
+        assertFalse(labelRepository.existsById(testLabel.getId()));
     }
 
 }

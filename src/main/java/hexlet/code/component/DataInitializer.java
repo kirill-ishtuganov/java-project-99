@@ -1,6 +1,8 @@
 package hexlet.code.component;
 
+import hexlet.code.model.Label;
 import hexlet.code.model.TaskStatus;
+import hexlet.code.repository.LabelRepository;
 import hexlet.code.repository.TaskStatusRepository;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -15,6 +17,7 @@ public class DataInitializer implements ApplicationRunner {
 
     private final CustomUserDetailsService userService;
     private final TaskStatusRepository statusRepository;
+    private final LabelRepository labelRepository;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
@@ -26,29 +29,37 @@ public class DataInitializer implements ApplicationRunner {
         userData.setPasswordDigest("qwerty");
         userService.createUser(userData);
 
-        TaskStatus draftStatus = new TaskStatus();
+        var draftStatus = new TaskStatus();
         draftStatus.setName("Draft");
         draftStatus.setSlug("draft");
         statusRepository.save(draftStatus);
 
-        TaskStatus toReviewStatus = new TaskStatus();
+        var toReviewStatus = new TaskStatus();
         toReviewStatus.setName("Review");
         toReviewStatus.setSlug("to_review");
         statusRepository.save(toReviewStatus);
 
-        TaskStatus toBeFixedStatus = new TaskStatus();
+        var toBeFixedStatus = new TaskStatus();
         toBeFixedStatus.setName("ToBeFixed");
         toBeFixedStatus.setSlug("to_be_fixed");
         statusRepository.save(toBeFixedStatus);
 
-        TaskStatus toPublishStatus = new TaskStatus();
+        var toPublishStatus = new TaskStatus();
         toPublishStatus.setName("ToPublish");
         toPublishStatus.setSlug("to_publish");
         statusRepository.save(toPublishStatus);
 
-        TaskStatus publishedStatus = new TaskStatus();
+        var publishedStatus = new TaskStatus();
         publishedStatus.setName("Published");
         publishedStatus.setSlug("published");
         statusRepository.save(publishedStatus);
+
+        var featureLabel = new Label();
+        featureLabel.setName("feature");
+        labelRepository.save(featureLabel);
+
+        var bugLabel = new Label();
+        bugLabel.setName("bug");
+        labelRepository.save(bugLabel);
     }
 }

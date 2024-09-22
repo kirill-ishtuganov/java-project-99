@@ -5,6 +5,7 @@ import java.util.List;
 import hexlet.code.dto.label.LabelCreateDTO;
 import hexlet.code.dto.label.LabelDTO;
 import hexlet.code.dto.label.LabelUpdateDTO;
+import hexlet.code.exception.DependenciesWithoutOwnerException;
 import hexlet.code.mapper.LabelMapper;
 import hexlet.code.repository.LabelRepository;
 import lombok.AllArgsConstructor;
@@ -69,6 +70,12 @@ public class LabelController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
-        repository.deleteById(id);
+        var label = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Label with id " + id + " not found"));
+        if (label.getTasks().isEmpty()) {
+            repository.deleteById(id);
+        } else {
+            throw new DependenciesWithoutOwnerException("Label used by Tasks");
+        }
     }
 }

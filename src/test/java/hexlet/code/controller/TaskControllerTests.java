@@ -11,9 +11,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import hexlet.code.dto.task.TaskCreateDTO;
 import hexlet.code.exception.ResourceNotFoundException;
 import hexlet.code.mapper.TaskMapper;
+import hexlet.code.model.Label;
 import hexlet.code.model.Task;
 import hexlet.code.model.TaskStatus;
 import hexlet.code.model.User;
+import hexlet.code.repository.LabelRepository;
 import hexlet.code.repository.TaskRepository;
 import hexlet.code.repository.TaskStatusRepository;
 import hexlet.code.repository.UserRepository;
@@ -36,6 +38,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -60,10 +63,13 @@ public class TaskControllerTests {
     @Autowired
     private TaskStatusRepository taskStatusRepository;
     @Autowired
+    private LabelRepository labelRepository;
+    @Autowired
     private TaskMapper taskMapper;
     private User testUser;
     private TaskStatus testStatus;
     private Task testTask;
+    private Label testLabel;
     private SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor token;
 
     @BeforeEach
@@ -81,6 +87,9 @@ public class TaskControllerTests {
 
         testTask = Instancio.of(modelGenerator.getTaskModel()).create();
         taskRepository.save(testTask);
+
+        testLabel = Instancio.of(modelGenerator.getLabelModel()).create();
+        labelRepository.save(testLabel);
 
         token = jwt().jwt(builder -> builder.subject(testUser.getEmail()));
     }
@@ -178,7 +187,7 @@ public class TaskControllerTests {
     }
 
     @Test
-    public void testDestroyUserWithDependencies() throws Exception {
+    public void testDeleteUserWithDependencies() throws Exception {
         var testUser2 = Instancio.of(modelGenerator.getUserModel()).create();
         userRepository.save(testUser2);
         var token2 = jwt().jwt(builder -> builder.subject(testUser2.getEmail()));
@@ -195,5 +204,14 @@ public class TaskControllerTests {
         mockMvc.perform(request).andExpect(status().isMethodNotAllowed());
 
         assertThat(userRepository.existsById(testUser2.getId()));
+    }
+
+    @Test
+    public void testDeleteLabelWithDependencies() throws Exception {
+        testTask.setLabels(Set.of(testLabel));
+        var request = delete("/api/labels/" + testLabel.getId()).with(jwt());
+        mockMvc.perform(request).andExpect(status().isNoContent());
+
+        assertThat(labelRepository.existsById(testLabel.getId()));
     }
 }

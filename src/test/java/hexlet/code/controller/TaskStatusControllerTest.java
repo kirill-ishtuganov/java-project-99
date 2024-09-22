@@ -2,6 +2,7 @@ package hexlet.code.controller;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -9,10 +10,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import hexlet.code.exception.ResourceNotFoundException;
 import hexlet.code.model.TaskStatus;
 import hexlet.code.repository.TaskStatusRepository;
 import hexlet.code.repository.UserRepository;
-import org.assertj.core.api.Assertions;
+import hexlet.code.util.ModelGenerator;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +39,6 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 @SpringBootTest
 @AutoConfigureMockMvc
 public class TaskStatusControllerTest {
-
     @Autowired
     private WebApplicationContext wac;
     @Autowired
@@ -46,8 +48,10 @@ public class TaskStatusControllerTest {
     @Autowired
     private UserRepository userRepository;
     @Autowired
-    private TaskStatusRepository statusRepository;
-    private TaskStatus testStatus;
+    private TaskStatusRepository taskStatusRepository;
+    @Autowired
+    private ModelGenerator modelGenerator;
+    private TaskStatus testTaskStatus;
 
     @BeforeEach
     public void setUp() {
@@ -55,15 +59,14 @@ public class TaskStatusControllerTest {
                 .defaultResponseCharacterEncoding(StandardCharsets.UTF_8)
                 .apply(springSecurity())
                 .build();
-        testStatus = new TaskStatus();
-        testStatus.setSlug("test");
-        testStatus.setName("test");
-        statusRepository.save(testStatus);
+
+        testTaskStatus = Instancio.of(modelGenerator.getTaskStatusModel()).create();
+        taskStatusRepository.save(testTaskStatus);
     }
 
     @AfterEach
     public void clean() {
-        statusRepository.deleteAll();
+        taskStatusRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -78,22 +81,21 @@ public class TaskStatusControllerTest {
 
     @Test
     public void testShow() throws Exception {
-        var request = get("/api/task_statuses/" + testStatus.getId()).with(jwt());
+        var request = get("/api/task_statuses/" + testTaskStatus.getId()).with(jwt());
         var result = mockMvc.perform(request)
                 .andExpect(status().isOk())
                 .andReturn();
         var body = result.getResponse().getContentAsString();
 
         assertThatJson(body).and(
-                v -> v.node("slug").isEqualTo(testStatus.getSlug())
+                v -> v.node("slug").isEqualTo(testTaskStatus.getSlug())
         );
     }
 
     @Test
     public void testCreate() throws Exception {
-        var data = new TaskStatus();
-        data.setSlug("test2");
-        data.setName("test2");
+        var data = Instancio.of(modelGenerator.getTaskStatusModel())
+                .create();
 
         var request = post("/api/task_statuses")
                 .with(jwt())
@@ -102,17 +104,18 @@ public class TaskStatusControllerTest {
         mockMvc.perform(request)
                 .andExpect(status().isCreated());
 
-        var status = statusRepository.findBySlug(data.getSlug()).get();
+        var taskStatus = taskStatusRepository.findBySlug(data.getSlug())
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
 
-        assertNotNull(status);
-        assertThat(status.getName()).isEqualTo(data.getName());
+        assertNotNull(taskStatus);
+        assertThat(taskStatus.getName()).isEqualTo(data.getName());
     }
 
     @Test
     public void testUpdate() throws Exception {
-        Map<String, String> data = Map.of("name", "updateName");
+        var data = Map.of("name", "updateName");
 
-        var request = put("/api/task_statuses/" + testStatus.getId())
+        var request = put("/api/task_statuses/" + testTaskStatus.getId())
                 .with(jwt())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(om.writeValueAsString(data));
@@ -120,24 +123,21 @@ public class TaskStatusControllerTest {
         mockMvc.perform(request)
                 .andExpect(status().isOk());
 
-        var status = statusRepository.findById(testStatus.getId()).get();
-        assertThat(status.getName()).isEqualTo(("updateName"));
+        var taskStatus = taskStatusRepository.findById(testTaskStatus.getId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Task with id " + testTaskStatus.getId() + " not found"
+                ));
+        assertThat(taskStatus.getName()).isEqualTo(("updateName"));
     }
 
     @Test
     public void testDelete() throws Exception {
-        var test = new TaskStatus();
-        test.setSlug("test4");
-        test.setName("TestStatus4");
-        statusRepository.save(test);
+        var testTaskStatus2 = Instancio.of(modelGenerator.getTaskStatusModel()).create();
+        taskStatusRepository.save(testTaskStatus2);
 
-        var request = delete("/api/task_statuses/" + test.getId())
-                .with(jwt());
-        mockMvc.perform(request)
-                .andExpect(status().isNoContent());
+        var request = delete("/api/task_statuses/" + testTaskStatus2.getId()).with(jwt());
+        mockMvc.perform(request).andExpect(status().isNoContent());
 
-        Assertions.assertThat(statusRepository.existsById(test.getId())).isFalse();
+        assertFalse(taskStatusRepository.existsById(testTaskStatus2.getId()));
     }
-
-
 }

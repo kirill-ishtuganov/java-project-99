@@ -1,21 +1,17 @@
-package hexlet.code.dto.task_status;
+package hexlet.code.dto.taskStatus;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-
 @Setter
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class TaskStatusCreateDTO {
-
-    @NotBlank
+public class TaskStatusDTO {
+    private long id;
     private String name;
-    @NotBlank
     private String slug;
-
+    private String createdAt;
 }

@@ -1,4 +1,4 @@
-package hexlet.code.dto.task_status;
+package hexlet.code.dto.taskStatus;
 
 import jakarta.validation.constraints.NotBlank;
 import org.openapitools.jackson.nullable.JsonNullable;

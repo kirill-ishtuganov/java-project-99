@@ -2,9 +2,10 @@ package hexlet.code.controller;
 
 import java.util.List;
 
-import hexlet.code.dto.task_status.TaskStatusCreateDTO;
-import hexlet.code.dto.task_status.TaskStatusDTO;
-import hexlet.code.dto.task_status.TaskStatusUpdateDTO;
+import hexlet.code.dto.taskStatus.TaskStatusCreateDTO;
+import hexlet.code.dto.taskStatus.TaskStatusDTO;
+import hexlet.code.dto.taskStatus.TaskStatusUpdateDTO;
+import hexlet.code.exception.DependenciesWithoutOwnerException;
 import hexlet.code.mapper.TaskStatusMapper;
 import hexlet.code.repository.TaskStatusRepository;
 import lombok.AllArgsConstructor;
@@ -52,7 +53,7 @@ public class TaskStatusController {
     @ResponseStatus(HttpStatus.OK)
     public TaskStatusDTO show(@PathVariable Long id) {
         var status = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Not Found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("TaskStatus with id " + id + " not found"));
         return statusMapper.map(status);
     }
 
@@ -60,7 +61,7 @@ public class TaskStatusController {
     @ResponseStatus(HttpStatus.OK)
     public TaskStatusDTO update(@RequestBody @Valid TaskStatusUpdateDTO statusData, @PathVariable Long id) {
         var status = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Not Found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("TaskStatus with id " + id + " not found"));
         statusMapper.update(statusData, status);
         repository.save(status);
         return statusMapper.map(status);
@@ -69,6 +70,12 @@ public class TaskStatusController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
-        repository.deleteById(id);
+        var status = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("TaskStatus with id " + id + " not found"));
+        if (status.getTasks().isEmpty()) {
+            repository.deleteById(id);
+        } else {
+            throw new DependenciesWithoutOwnerException("TaskStatus is used for Task");
+        }
     }
 }

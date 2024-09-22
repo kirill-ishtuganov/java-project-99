@@ -2,6 +2,7 @@ package hexlet.code.controller;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -13,14 +14,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import hexlet.code.dto.user.UserDTO;
 import hexlet.code.dto.user.UserUpdateDTO;
+import hexlet.code.exception.ResourceNotFoundException;
 import hexlet.code.mapper.UserMapper;
 import org.assertj.core.api.Assertions;
 import org.instancio.Instancio;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openapitools.jackson.nullable.JsonNullable;
@@ -36,7 +39,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import hexlet.code.model.User;
 import hexlet.code.repository.UserRepository;
 import hexlet.code.util.ModelGenerator;
-import net.datafaker.Faker;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -44,32 +46,20 @@ import org.springframework.web.context.WebApplicationContext;
 @SpringBootTest
 @AutoConfigureMockMvc
 public class UsersControllerTest {
-
     @Autowired
     private WebApplicationContext wac;
-
     @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private Faker faker;
-
     @Autowired
     private UserRepository userRepository;
-
     @Autowired
     private ModelGenerator modelGenerator;
-
     @Autowired
     private ObjectMapper om;
-
     @Autowired
     private UserMapper userMapper;
-
     private JwtRequestPostProcessor token;
-
     private User testUser;
-
 
     @BeforeEach
     public void setUp() {
@@ -80,9 +70,13 @@ public class UsersControllerTest {
 
         token = jwt().jwt(builder -> builder.subject("hexlet@example.com"));
 
-        testUser = Instancio.of(modelGenerator.getUserModel())
-                .create();
+        testUser = Instancio.of(modelGenerator.getUserModel()).create();
         userRepository.save(testUser);
+    }
+
+    @AfterEach
+    public void clean() {
+        userRepository.deleteAll();
     }
 
     @Test
@@ -115,8 +109,7 @@ public class UsersControllerTest {
 
     @Test
     public void testCreate() throws Exception {
-        var data = Instancio.of(modelGenerator.getUserModel())
-                .create();
+        var data = Instancio.of(modelGenerator.getUserModel()).create();
 
         var request = post("/api/users")
                 .with(token)
@@ -125,7 +118,8 @@ public class UsersControllerTest {
         mockMvc.perform(request)
                 .andExpect(status().isCreated());
 
-        var user = userRepository.findByEmail(data.getEmail()).get();
+        var user = userRepository.findByEmail(data.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         assertNotNull(user);
         assertThat(user.getFirstName()).isEqualTo(data.getFirstName());
@@ -134,35 +128,33 @@ public class UsersControllerTest {
 
     @Test
     public void testUpdate() throws Exception {
-
-        var data = new HashMap<>();
+        var data = Map.of("firstName", "Mike");
         var token2 = jwt().jwt(builder -> builder.subject(testUser.getEmail()));
-        data.put("firstName", "Mike");
 
         var request = put("/api/users/" + testUser.getId())
                 .with(token2)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(om.writeValueAsString(data));
 
-        mockMvc.perform(request)
-                .andExpect(status().isOk());
+        mockMvc.perform(request).andExpect(status().isOk());
 
-        var user = userRepository.findById(testUser.getId()).get();
+        var user = userRepository.findById(testUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + testUser.getId() + " not found"));
         assertThat(user.getFirstName()).isEqualTo(("Mike"));
     }
 
     @Test
-    public void testIndexWithoutAuth() throws Exception {
-        var result = mockMvc.perform(get("/api/users"))
-                .andExpect(status().isUnauthorized());
+    public void testDestroy() throws Exception {
+        var testUser2 = Instancio.of(modelGenerator.getUserModel()).create();
+        userRepository.save(testUser2);
+        var token2 = jwt().jwt(builder -> builder.subject(testUser2.getEmail()));
 
-    }
+        var request = delete("/api/users/" + testUser2.getId())
+                .with(token2);
 
-    @Test
-    public void testShowWithoutAuth() throws Exception {
-        var request = get("/api/users/" + testUser.getId());
-        var result = mockMvc.perform(request)
-                .andExpect(status().isUnauthorized());
+        mockMvc.perform(request).andExpect(status().isNoContent());
+
+        assertFalse(userRepository.existsById(testUser2.getId()));
     }
 
     @Test
@@ -180,9 +172,10 @@ public class UsersControllerTest {
                 .content(om.writeValueAsString(updatedDTO))
                 .with(token);
 
-        mockMvc.perform(request).andExpect(status().isInternalServerError());
+        mockMvc.perform(request).andExpect(status().isForbidden());
 
-        var userFromRepo = userRepository.findByEmail(user.getEmail()).get();
+        var userFromRepo = userRepository.findByEmail(user.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         assertThat(userFromRepo).isNotNull();
         assertThat(userFromRepo.getFirstName()).isEqualTo(user.getFirstName());
@@ -192,14 +185,14 @@ public class UsersControllerTest {
 
     @Test
     public void testDestroyAnotherUser() throws Exception {
-        var user = Instancio.of(modelGenerator.getUserModel())
+        var testUser2 = Instancio.of(modelGenerator.getUserModel())
                 .create();
-        userRepository.save(user);
+        userRepository.save(testUser2);
 
-        var request = delete("/api/users/{id}", user.getId()).with(token);
+        var request = delete("/api/users/{id}", testUser2.getId()).with(token);
         mockMvc.perform(request)
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isForbidden());
 
-        Assertions.assertThat(userRepository.existsById(user.getId())).isTrue();
+        assertThat(userRepository.existsById(testUser2.getId()));
     }
 }

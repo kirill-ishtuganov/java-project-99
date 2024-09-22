@@ -1,8 +1,8 @@
 package hexlet.code.mapper;
 
-import hexlet.code.dto.task_status.TaskStatusCreateDTO;
-import hexlet.code.dto.task_status.TaskStatusDTO;
-import hexlet.code.dto.task_status.TaskStatusUpdateDTO;
+import hexlet.code.dto.taskStatus.TaskStatusCreateDTO;
+import hexlet.code.dto.taskStatus.TaskStatusDTO;
+import hexlet.code.dto.taskStatus.TaskStatusUpdateDTO;
 import hexlet.code.model.TaskStatus;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;

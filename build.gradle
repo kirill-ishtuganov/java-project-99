@@ -80,7 +80,7 @@ check.dependsOn jacocoTestCoverageVerification
 sentry {
     includeSourceContext = true
 
-    org = "myorganization-m4"
+    org = "hexlet-o0"
     projectName = "java-spring-boot"
     authToken = System.getenv("SENTRY_AUTH_TOKEN")
 }

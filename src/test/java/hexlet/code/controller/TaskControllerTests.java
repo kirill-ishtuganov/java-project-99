@@ -44,7 +44,6 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 
 @SpringBootTest
 @AutoConfigureMockMvc
-
 public class TaskControllerTests {
     @Autowired
     private WebApplicationContext wac;

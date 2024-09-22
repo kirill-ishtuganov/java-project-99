@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Set;
+
 @Setter
 @Getter
 @AllArgsConstructor
@@ -26,4 +28,6 @@ public class TaskDTO {
     private String content;
 
     private String status;
+
+    private Set<Long> taskLabelIds;
 }

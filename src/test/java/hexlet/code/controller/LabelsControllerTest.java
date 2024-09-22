@@ -2,7 +2,6 @@ package hexlet.code.controller;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -11,10 +10,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import hexlet.code.exception.ResourceNotFoundException;
-import hexlet.code.model.TaskStatus;
-import hexlet.code.repository.TaskStatusRepository;
-import hexlet.code.repository.UserRepository;
+import hexlet.code.model.Label;
+import hexlet.code.repository.LabelRepository;
 import hexlet.code.util.ModelGenerator;
+import org.assertj.core.api.Assertions;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +37,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 
 @SpringBootTest
 @AutoConfigureMockMvc
-public class TaskStatusControllerTest {
+public class LabelsControllerTest {
     @Autowired
     private WebApplicationContext wac;
     @Autowired
@@ -46,12 +45,10 @@ public class TaskStatusControllerTest {
     @Autowired
     private ObjectMapper om;
     @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private TaskStatusRepository taskStatusRepository;
-    @Autowired
     private ModelGenerator modelGenerator;
-    private TaskStatus testTaskStatus;
+    @Autowired
+    private LabelRepository labelRepository;
+    private Label testLabel;
 
     @BeforeEach
     public void setUp() {
@@ -59,20 +56,18 @@ public class TaskStatusControllerTest {
                 .defaultResponseCharacterEncoding(StandardCharsets.UTF_8)
                 .apply(springSecurity())
                 .build();
-
-        testTaskStatus = Instancio.of(modelGenerator.getTaskStatusModel()).create();
-        taskStatusRepository.save(testTaskStatus);
+        testLabel = Instancio.of(modelGenerator.getLabelModel()).create();
+        labelRepository.save(testLabel);
     }
 
     @AfterEach
     public void clean() {
-        taskStatusRepository.deleteAll();
-        userRepository.deleteAll();
+        labelRepository.deleteAll();
     }
 
     @Test
     public void testIndex() throws Exception {
-        var result = mockMvc.perform(get("/api/task_statuses").with(jwt()))
+        var result = mockMvc.perform(get("/api/labels").with(jwt()))
                 .andExpect(status().isOk())
                 .andReturn();
         var body = result.getResponse().getContentAsString();
@@ -81,60 +76,61 @@ public class TaskStatusControllerTest {
 
     @Test
     public void testShow() throws Exception {
-        var request = get("/api/task_statuses/" + testTaskStatus.getId()).with(jwt());
+        var request = get("/api/labels/" + testLabel.getId()).with(jwt());
         var result = mockMvc.perform(request)
                 .andExpect(status().isOk())
                 .andReturn();
         var body = result.getResponse().getContentAsString();
 
         assertThatJson(body).and(
-                v -> v.node("slug").isEqualTo(testTaskStatus.getSlug())
+                v -> v.node("name").isEqualTo(testLabel.getName())
         );
     }
 
     @Test
     public void testCreate() throws Exception {
-        var data = Instancio.of(modelGenerator.getTaskStatusModel())
-                .create();
+        var data = new Label();
+        data.setName("test2");
 
-        var request = post("/api/task_statuses")
+        var request = post("/api/labels")
                 .with(jwt())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(om.writeValueAsString(data));
-        mockMvc.perform(request)
-                .andExpect(status().isCreated());
+        mockMvc.perform(request).andExpect(status().isCreated());
 
-        var taskStatus = taskStatusRepository.findBySlug(data.getSlug())
-                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+        var label = labelRepository.findByName(data.getName())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Label with id " + labelRepository.findByName(data.getName()) + " not found"
+                        ));
 
-        assertNotNull(taskStatus);
-        assertThat(taskStatus.getName()).isEqualTo(data.getName());
+        assertNotNull(label);
+        assertThat(label.getName()).isEqualTo(data.getName());
     }
 
     @Test
     public void testUpdate() throws Exception {
         var data = Map.of("name", "updateName");
 
-        var request = put("/api/task_statuses/" + testTaskStatus.getId())
+        var request = put("/api/labels/" + testLabel.getId())
                 .with(jwt())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(om.writeValueAsString(data));
 
-        mockMvc.perform(request)
-                .andExpect(status().isOk());
+        mockMvc.perform(request).andExpect(status().isOk());
 
-        var taskStatus = taskStatusRepository.findById(testTaskStatus.getId())
+        var status = labelRepository.findById(testLabel.getId())
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Task with id " + testTaskStatus.getId() + " not found"
+                        "Label with id " + testLabel.getId() + " not found"
                 ));
-        assertThat(taskStatus.getName()).isEqualTo(("updateName"));
+        assertThat(status.getName()).isEqualTo(("updateName"));
     }
 
     @Test
     public void testDelete() throws Exception {
-        var request = delete("/api/task_statuses/" + testTaskStatus.getId()).with(jwt());
+        var request = delete("/api/labels/" + testLabel.getId()).with(jwt());
         mockMvc.perform(request).andExpect(status().isNoContent());
 
-        assertFalse(taskStatusRepository.existsById(testTaskStatus.getId()));
+        Assertions.assertThat(labelRepository.existsById(testLabel.getId())).isFalse();
     }
+
 }

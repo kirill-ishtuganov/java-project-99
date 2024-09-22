@@ -1,13 +1,15 @@
 package hexlet.code.model;
 
+import static jakarta.persistence.GenerationType.IDENTITY;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -19,37 +21,26 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-import static jakarta.persistence.GenerationType.IDENTITY;
-
 @Entity
-@Table(name = "tasks")
-@EntityListeners(AuditingEntityListener.class)
+@Table(name = "labels")
 @Getter
 @Setter
-@EqualsAndHashCode(of = {"name", "taskStatus"})
-public class Task implements BaseEntity {
+@EntityListeners(AuditingEntityListener.class)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 
+public class Label implements BaseEntity {
     @Id
     @GeneratedValue(strategy = IDENTITY)
-    private long id;
+    @EqualsAndHashCode.Include
+    private Long id;
 
-    @NotBlank
-    @Size(min = 1)
+    @Column(unique = true)
+    @Size(min = 3, max = 1000)
     private String name;
-
-    private Integer index;
-
-    private String description;
-
-    @ManyToOne
-    private TaskStatus taskStatus;
-
-    @ManyToOne
-    private User assignee;
-
-    @ManyToMany
-    private Set<Label> labels = new HashSet<>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @ManyToMany(mappedBy = "labels", cascade = CascadeType.ALL)
+    private Set<Task> tasks = new HashSet<>();
 }

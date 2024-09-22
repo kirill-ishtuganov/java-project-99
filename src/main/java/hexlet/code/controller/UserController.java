@@ -59,7 +59,7 @@ public class UserController {
     @ResponseStatus(HttpStatus.OK)
     public UserDTO show(@PathVariable Long id) {
         var user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Not Found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
         return userMapper.map(user);
     }
 
@@ -68,7 +68,7 @@ public class UserController {
     @ResponseStatus(HttpStatus.OK)
     public UserDTO update(@RequestBody @Valid UserUpdateDTO userData, @PathVariable Long id) {
         var user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Not Found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
         userMapper.update(userData, user);
         userRepository.save(user);
         return userMapper.map(user);
@@ -79,7 +79,7 @@ public class UserController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         var user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Not Found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
         if (taskRepository.findByAssignee(user).isEmpty()) {
             userRepository.deleteById(id);
         } else {

@@ -54,7 +54,7 @@ public class TaskController {
     @ResponseStatus(HttpStatus.OK)
     public TaskDTO show(@PathVariable Long id) {
         var task = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Not Found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Task with id " + id + " not found"));
         return taskMapper.map(task);
     }
 
@@ -62,7 +62,7 @@ public class TaskController {
     @ResponseStatus(HttpStatus.OK)
     public TaskDTO update(@RequestBody @Valid TaskUpdateDTO taskData, @PathVariable Long id) {
         var task = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Not Found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Task with id " + id + " not found"));
         taskMapper.update(taskData, task);
         repository.save(task);
         return taskMapper.map(task);

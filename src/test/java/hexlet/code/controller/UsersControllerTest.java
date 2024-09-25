@@ -20,7 +20,6 @@ import java.util.Map;
 import com.fasterxml.jackson.core.type.TypeReference;
 import hexlet.code.dto.user.UserDTO;
 import hexlet.code.dto.user.UserUpdateDTO;
-import hexlet.code.exception.ResourceNotFoundException;
 import hexlet.code.mapper.UserMapper;
 import org.assertj.core.api.Assertions;
 import org.instancio.Instancio;
@@ -81,7 +80,7 @@ public class UsersControllerTest {
     }
 
     @Test
-    public void testIndex() throws Exception {
+    public void testGetAll() throws Exception {
         var response = mockMvc.perform(get("/api/users").with(jwt()))
                 .andExpect(status().isOk())
                 .andReturn()
@@ -96,7 +95,7 @@ public class UsersControllerTest {
     }
 
     @Test
-    public void testShow() throws Exception {
+    public void testGetById() throws Exception {
         var request = get("/api/users/" + testUser.getId()).with(jwt());
         var result = mockMvc.perform(request)
                 .andExpect(status().isOk())
@@ -119,8 +118,7 @@ public class UsersControllerTest {
         mockMvc.perform(request)
                 .andExpect(status().isCreated());
 
-        var user = userRepository.findByEmail(data.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        var user = userRepository.findByEmail(data.getEmail()).get();
 
         assertNotNull(user);
         assertThat(user.getFirstName()).isEqualTo(data.getFirstName());
@@ -139,8 +137,7 @@ public class UsersControllerTest {
 
         mockMvc.perform(request).andExpect(status().isOk());
 
-        var user = userRepository.findById(testUser.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("User with id " + testUser.getId() + " not found"));
+        var user = userRepository.findById(testUser.getId()).get();
         assertThat(user.getFirstName()).isEqualTo(("Mike"));
     }
 
@@ -175,8 +172,7 @@ public class UsersControllerTest {
 
         mockMvc.perform(request).andExpect(status().isForbidden());
 
-        var userFromRepo = userRepository.findByEmail(user.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        var userFromRepo = userRepository.findByEmail(user.getEmail()).get();
 
         assertThat(userFromRepo).isNotNull();
         assertThat(userFromRepo.getFirstName()).isEqualTo(user.getFirstName());

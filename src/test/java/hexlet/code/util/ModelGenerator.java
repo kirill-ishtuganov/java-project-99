@@ -11,7 +11,6 @@ import net.datafaker.Faker;
 import org.instancio.Instancio;
 import org.instancio.Model;
 import org.instancio.Select;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Getter
@@ -22,11 +21,11 @@ public class ModelGenerator {
     private Model<TaskStatus> taskStatusModel;
     private Model<Task> taskModel;
     private Model<Label> labelModel;
-    @Autowired
-    private Faker faker;
 
     @PostConstruct
     private void init() {
+        var faker = new Faker();
+
         userModel = Instancio.of(User.class)
                 .ignore(Select.field(User::getId))
                 .ignore(Select.field(User::getUpdatedAt))
@@ -59,7 +58,6 @@ public class ModelGenerator {
         labelModel = Instancio.of(Label.class)
                 .ignore(Select.field(Label::getId))
                 .ignore(Select.field(Label::getCreatedAt))
-                .ignore(Select.field(Label::getTasks))
                 .supply(Select.field(Label::getName), () -> faker.lorem().characters(3, 200))
                 .toModel();
     }

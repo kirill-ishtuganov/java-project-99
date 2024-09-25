@@ -10,7 +10,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import hexlet.code.exception.ResourceNotFoundException;
 import hexlet.code.model.Label;
 import hexlet.code.repository.LabelRepository;
 import hexlet.code.util.ModelGenerator;
@@ -66,7 +65,7 @@ public class LabelsControllerTest {
     }
 
     @Test
-    public void testIndex() throws Exception {
+    public void testGetAll() throws Exception {
         var result = mockMvc.perform(get("/api/labels").with(jwt()))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -75,7 +74,7 @@ public class LabelsControllerTest {
     }
 
     @Test
-    public void testShow() throws Exception {
+    public void testGetById() throws Exception {
         var request = get("/api/labels/" + testLabel.getId()).with(jwt());
         var result = mockMvc.perform(request)
                 .andExpect(status().isOk())
@@ -98,11 +97,7 @@ public class LabelsControllerTest {
                 .content(om.writeValueAsString(data));
         mockMvc.perform(request).andExpect(status().isCreated());
 
-        var label = labelRepository.findByName(data.getName())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Label with id " + labelRepository.findByName(data.getName()) + " not found"
-                        ));
-
+        var label = labelRepository.findByName(data.getName()).get();
         assertNotNull(label);
         assertThat(label.getName()).isEqualTo(data.getName());
     }
@@ -118,10 +113,7 @@ public class LabelsControllerTest {
 
         mockMvc.perform(request).andExpect(status().isOk());
 
-        var status = labelRepository.findById(testLabel.getId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Label with id " + testLabel.getId() + " not found"
-                ));
+        var status = labelRepository.findById(testLabel.getId()).get();
         assertThat(status.getName()).isEqualTo(("updateName"));
     }
 

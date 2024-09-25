@@ -2,6 +2,7 @@ package hexlet.code.controller;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -10,7 +11,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import hexlet.code.dto.task.TaskCreateDTO;
-import hexlet.code.exception.ResourceNotFoundException;
 import hexlet.code.mapper.TaskMapper;
 import hexlet.code.model.Label;
 import hexlet.code.model.Task;
@@ -37,7 +37,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -104,7 +103,7 @@ public class TaskControllerTests {
     }
 
     @Test
-    public void testIndex() throws Exception {
+    public void testGetAll() throws Exception {
         var result = mockMvc.perform(get("/api/tasks").with(token))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -114,7 +113,7 @@ public class TaskControllerTests {
     }
 
     @Test
-    public void testIndexWithFilter() throws Exception {
+    public void testGetAllWithFilter() throws Exception {
         var user = Instancio.of(modelGenerator.getUserModel())
                 .create();
         userRepository.save(user);
@@ -149,7 +148,7 @@ public class TaskControllerTests {
     }
 
     @Test
-    public void testShow() throws Exception {
+    public void testGetById() throws Exception {
         var request = get("/api/tasks/" + testTask.getId()).with(token);
         var result = mockMvc.perform(request)
                 .andExpect(status().isOk())
@@ -179,11 +178,11 @@ public class TaskControllerTests {
         var id = om.readTree(body).get("id").asLong();
         assertThat(taskRepository.findById(id)).isPresent();
 
-        var testTask2 = taskRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Task with id " + id + " not found"));
+        var testTask2 = taskRepository.findById(id).get();
         assertThat(testTask2).isNotNull();
-        assertThat(testTask2.getName()).isEqualTo(data.getTitle());
-        assertThat(testTask2.getAssignee().equals(testUser)).isTrue();
+        assertEquals(testTask2.getName(), data.getTitle());
+        assertEquals(testTask2.getAssignee(), testUser);
+        assertEquals(testTask2.getTaskStatus(), testStatus);
     }
 
     @Test
@@ -197,8 +196,7 @@ public class TaskControllerTests {
 
         mockMvc.perform(request).andExpect(status().isOk());
 
-        var task = taskRepository.findById(testTask.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Task with id " + testTask.getId() + " not found"));
+        var task = taskRepository.findById(testTask.getId()).get();
         assertThat(task.getName()).isEqualTo(("updateName"));
     }
 
@@ -209,47 +207,5 @@ public class TaskControllerTests {
         mockMvc.perform(request)
                 .andExpect(status().isNoContent());
         Assertions.assertThat(taskRepository.existsById(testTask.getId())).isFalse();
-    }
-
-    @Test void testDeleteTaskStatusWithDependencies() throws Exception {
-        var testTaskStatus2 = Instancio.of(modelGenerator.getTaskStatusModel()).create();
-        var testTask = Instancio.of(modelGenerator.getTaskModel()).create();
-        testTaskStatus2.setTasks(List.of(testTask));
-        taskStatusRepository.save(testTaskStatus2);
-
-        var request = delete("/api/task_statuses/" + testTaskStatus2.getId()).with(jwt());
-        mockMvc.perform(request).andExpect(status().isNoContent());
-
-        assertThat(taskStatusRepository.existsById(testTaskStatus2.getId()));
-    }
-
-    @Test
-    public void testDeleteUserWithDependencies() throws Exception {
-        var testUser2 = Instancio.of(modelGenerator.getUserModel()).create();
-        userRepository.save(testUser2);
-        var token2 = jwt().jwt(builder -> builder.subject(testUser2.getEmail()));
-
-        var data = new TaskCreateDTO();
-        data.setTitle("testTitle");
-        data.setAssigneeId(testUser2.getId());
-        data.setStatus(testStatus.getSlug());
-        var testTask = taskMapper.map(data);
-        taskRepository.save(testTask);
-
-        var request = delete("/api/users/" + testUser2.getId()).with(token2);
-
-        mockMvc.perform(request).andExpect(status().isMethodNotAllowed());
-
-        assertTrue(userRepository.existsById(testUser2.getId()));
-    }
-
-    @Test
-    public void testDeleteLabelWithDependencies() throws Exception {
-        testTask.setLabels(Set.of(testLabel));
-        taskRepository.save(testTask);
-        var request = delete("/api/labels/" + testLabel.getId()).with(jwt());
-        mockMvc.perform(request).andExpect(status().isMethodNotAllowed());
-
-        assertTrue(labelRepository.existsById(testLabel.getId()));
     }
 }

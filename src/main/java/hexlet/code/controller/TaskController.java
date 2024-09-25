@@ -12,7 +12,6 @@ import hexlet.code.specification.TaskSpecification;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import hexlet.code.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,7 +32,7 @@ public class TaskController {
     private TaskSpecification taskSpecification;
 
     @GetMapping("")
-    public ResponseEntity<List<TaskDTO>> index(TaskParamsDTO params) {
+    public ResponseEntity<List<TaskDTO>> getAll(TaskParamsDTO params) {
         var spec = taskSpecification.build(params);
         var tasks = repository.findAll(spec);
         var result = tasks.stream()
@@ -44,6 +43,14 @@ public class TaskController {
                 .body(result);
     }
 
+    @GetMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public TaskDTO getById(@PathVariable Long id) {
+        var task = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Task with id " + id + " not found"));
+        return taskMapper.map(task);
+    }
+
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
     public TaskDTO create(@Valid @RequestBody TaskCreateDTO taskData) {
@@ -52,19 +59,11 @@ public class TaskController {
         return taskMapper.map(task);
     }
 
-    @GetMapping("/{id}")
-    @ResponseStatus(HttpStatus.OK)
-    public TaskDTO show(@PathVariable Long id) {
-        var task = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Task with id " + id + " not found"));
-        return taskMapper.map(task);
-    }
-
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public TaskDTO update(@RequestBody @Valid TaskUpdateDTO taskData, @PathVariable Long id) {
         var task = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Task with id " + id + " not found"));
+                .orElseThrow(() -> new RuntimeException("Task with id " + id + " not found"));
         taskMapper.update(taskData, task);
         repository.save(task);
         return taskMapper.map(task);

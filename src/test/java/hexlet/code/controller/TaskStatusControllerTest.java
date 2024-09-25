@@ -2,6 +2,7 @@ package hexlet.code.controller;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -10,7 +11,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import hexlet.code.exception.ResourceNotFoundException;
 import hexlet.code.model.TaskStatus;
 import hexlet.code.repository.TaskStatusRepository;
 import hexlet.code.repository.UserRepository;
@@ -71,7 +71,7 @@ public class TaskStatusControllerTest {
     }
 
     @Test
-    public void testIndex() throws Exception {
+    public void testGetAll() throws Exception {
         var result = mockMvc.perform(get("/api/task_statuses").with(jwt()))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -80,7 +80,7 @@ public class TaskStatusControllerTest {
     }
 
     @Test
-    public void testShow() throws Exception {
+    public void testGetById() throws Exception {
         var request = get("/api/task_statuses/" + testTaskStatus.getId()).with(jwt());
         var result = mockMvc.perform(request)
                 .andExpect(status().isOk())
@@ -88,7 +88,8 @@ public class TaskStatusControllerTest {
         var body = result.getResponse().getContentAsString();
 
         assertThatJson(body).and(
-                v -> v.node("slug").isEqualTo(testTaskStatus.getSlug())
+                v -> v.node("slug").isEqualTo(testTaskStatus.getSlug()),
+                v -> v.node("name").isEqualTo(testTaskStatus.getName())
         );
     }
 
@@ -104,11 +105,11 @@ public class TaskStatusControllerTest {
         mockMvc.perform(request)
                 .andExpect(status().isCreated());
 
-        var taskStatus = taskStatusRepository.findBySlug(data.getSlug())
-                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+        var taskStatus = taskStatusRepository.findBySlug(data.getSlug()).get();
 
         assertNotNull(taskStatus);
-        assertThat(taskStatus.getName()).isEqualTo(data.getName());
+        assertEquals(taskStatus.getName(), data.getName());
+        assertEquals(taskStatus.getSlug(), data.getSlug());
     }
 
     @Test
@@ -123,10 +124,7 @@ public class TaskStatusControllerTest {
         mockMvc.perform(request)
                 .andExpect(status().isOk());
 
-        var taskStatus = taskStatusRepository.findById(testTaskStatus.getId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Task with id " + testTaskStatus.getId() + " not found"
-                ));
+        var taskStatus = taskStatusRepository.findById(testTaskStatus.getId()).get();
         assertThat(taskStatus.getName()).isEqualTo(("updateName"));
     }
 

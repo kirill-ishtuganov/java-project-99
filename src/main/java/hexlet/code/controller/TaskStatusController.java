@@ -5,8 +5,7 @@ import java.util.List;
 import hexlet.code.dto.taskStatus.TaskStatusCreateDTO;
 import hexlet.code.dto.taskStatus.TaskStatusDTO;
 import hexlet.code.dto.taskStatus.TaskStatusUpdateDTO;
-import hexlet.code.mapper.TaskStatusMapper;
-import hexlet.code.repository.TaskStatusRepository;
+import hexlet.code.service.TaskStatusService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,49 +24,37 @@ import jakarta.validation.Valid;
 @AllArgsConstructor
 @RequestMapping("/api/task_statuses")
 public class TaskStatusController {
-    private final TaskStatusRepository repository;
-    private final TaskStatusMapper statusMapper;
+    private TaskStatusService service;
 
     @GetMapping("")
-    ResponseEntity<List<TaskStatusDTO>> getAll() {
-        var statuses = repository.findAll();
-        var result = statuses.stream()
-                .map(statusMapper::map)
-                .toList();
+    public ResponseEntity<List<TaskStatusDTO>> getAll() {
+        var statuses = service.getAll();
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(statuses.size()))
-                .body(result);
+                .body(statuses);
     }
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public TaskStatusDTO getById(@PathVariable Long id) {
-        var status = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("TaskStatus with id " + id + " not found"));
-        return statusMapper.map(status);
+        return service.getById(id);
     }
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
     public TaskStatusDTO create(@Valid @RequestBody TaskStatusCreateDTO statusData) {
-        var status = statusMapper.map(statusData);
-        repository.save(status);
-        return statusMapper.map(status);
+        return service.create(statusData);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public TaskStatusDTO update(@RequestBody @Valid TaskStatusUpdateDTO statusData, @PathVariable Long id) {
-        var status = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("TaskStatus with id " + id + " not found"));
-        statusMapper.update(statusData, status);
-        repository.save(status);
-        return statusMapper.map(status);
+        return service.update(statusData, id);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
-        repository.deleteById(id);
+        service.delete(id);
     }
 }

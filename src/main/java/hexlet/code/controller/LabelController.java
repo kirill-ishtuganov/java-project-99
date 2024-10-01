@@ -5,8 +5,7 @@ import java.util.List;
 import hexlet.code.dto.label.LabelCreateDTO;
 import hexlet.code.dto.label.LabelDTO;
 import hexlet.code.dto.label.LabelUpdateDTO;
-import hexlet.code.mapper.LabelMapper;
-import hexlet.code.repository.LabelRepository;
+import hexlet.code.service.LabelService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,49 +24,37 @@ import jakarta.validation.Valid;
 @AllArgsConstructor
 @RequestMapping("/api/labels")
 public class LabelController {
-    private final LabelRepository repository;
-    private final LabelMapper labelMapper;
+    private final LabelService service;
 
     @GetMapping("")
-    ResponseEntity<List<LabelDTO>> getAll() {
-        var labels = repository.findAll();
-        var result = labels.stream()
-                .map(labelMapper::map)
-                .toList();
+    public ResponseEntity<List<LabelDTO>> getAll() {
+        var labels = service.getAll();
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(labels.size()))
-                .body(result);
+                .body(labels);
     }
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public LabelDTO getById(@PathVariable Long id) {
-        var label = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Label with id " + id + " not found"));
-        return labelMapper.map(label);
+        return service.getById(id);
     }
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
     public LabelDTO create(@Valid @RequestBody LabelCreateDTO labelData) {
-        var label = labelMapper.map(labelData);
-        repository.save(label);
-        return labelMapper.map(label);
+        return service.create(labelData);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public LabelDTO update(@RequestBody @Valid LabelUpdateDTO labelData, @PathVariable Long id) {
-        var label = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Label with id " + id + " not found"));
-        labelMapper.update(labelData, label);
-        repository.save(label);
-        return labelMapper.map(label);
+        return service.update(labelData, id);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
-        repository.deleteById(id);
+        service.delete(id);
     }
 }

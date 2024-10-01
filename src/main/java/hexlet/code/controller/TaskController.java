@@ -6,9 +6,7 @@ import hexlet.code.dto.task.TaskCreateDTO;
 import hexlet.code.dto.task.TaskDTO;
 import hexlet.code.dto.task.TaskParamsDTO;
 import hexlet.code.dto.task.TaskUpdateDTO;
-import hexlet.code.mapper.TaskMapper;
-import hexlet.code.repository.TaskRepository;
-import hexlet.code.specification.TaskSpecification;
+import hexlet.code.service.TaskService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,51 +25,37 @@ import org.springframework.web.bind.annotation.RestController;
 @AllArgsConstructor
 @RequestMapping("/api/tasks")
 public class TaskController {
-    private final TaskRepository repository;
-    private TaskMapper taskMapper;
-    private TaskSpecification taskSpecification;
+    private TaskService service;
 
     @GetMapping("")
     public ResponseEntity<List<TaskDTO>> getAll(TaskParamsDTO params) {
-        var spec = taskSpecification.build(params);
-        var tasks = repository.findAll(spec);
-        var result = tasks.stream()
-                .map(taskMapper::map)
-                .toList();
+        var tasks = service.getAll(params);
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(tasks.size()))
-                .body(result);
+                .body(tasks);
     }
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public TaskDTO getById(@PathVariable Long id) {
-        var task = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Task with id " + id + " not found"));
-        return taskMapper.map(task);
+        return service.getById(id);
     }
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
     public TaskDTO create(@Valid @RequestBody TaskCreateDTO taskData) {
-        var task = taskMapper.map(taskData);
-        repository.save(task);
-        return taskMapper.map(task);
+        return service.create(taskData);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public TaskDTO update(@RequestBody @Valid TaskUpdateDTO taskData, @PathVariable Long id) {
-        var task = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Task with id " + id + " not found"));
-        taskMapper.update(taskData, task);
-        repository.save(task);
-        return taskMapper.map(task);
+        return service.update(taskData, id);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
-        repository.deleteById(id);
+        service.delete(id);
     }
 }

@@ -19,6 +19,7 @@ import org.mapstruct.Named;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,6 +39,13 @@ public abstract class TaskMapper {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Mapping(source = "name", target = "title")
+    @Mapping(source = "description", target = "content")
+    @Mapping(source = "taskStatus.slug", target = "status")
+    @Mapping(source = "assignee.id", target = "assigneeId")
+    @Mapping(target = "taskLabelIds", source = "labels", qualifiedByName = "labelsToLabelsIds")
+    public abstract List<TaskDTO> map(List<Task> tasks);
 
     @Mapping(source = "title", target = "name")
     @Mapping(source = "content", target = "description")

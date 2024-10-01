@@ -10,6 +10,8 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
 import org.mapstruct.MappingTarget;
 
+import java.util.List;
+
 @Mapper(
         uses = {JsonNullableMapper.class, ReferenceMapper.class},
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
@@ -17,6 +19,8 @@ import org.mapstruct.MappingTarget;
         unmappedTargetPolicy = ReportingPolicy.IGNORE
 )
 public abstract class LabelMapper {
+
+    public abstract List<LabelDTO> map(List<Label> labels);
 
     public abstract Label map(LabelCreateDTO labelCreateDTO);
 

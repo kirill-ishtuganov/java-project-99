@@ -19,9 +19,7 @@ public class TaskStatusService {
 
     public List<TaskStatusDTO> getAll() {
         var statuses = repository.findAll();
-        return statuses.stream()
-                .map(statusMapper::map)
-                .toList();
+        return statusMapper.map(statuses);
     }
 
     public TaskStatusDTO getById(Long id) {

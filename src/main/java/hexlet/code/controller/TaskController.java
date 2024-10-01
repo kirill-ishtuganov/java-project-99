@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TaskController {
     private TaskService service;
 
-    @GetMapping("")
+    @GetMapping()
     public ResponseEntity<List<TaskDTO>> getAll(TaskParamsDTO params) {
         var tasks = service.getAll(params);
         return ResponseEntity.ok()
@@ -41,7 +41,7 @@ public class TaskController {
         return service.getById(id);
     }
 
-    @PostMapping("")
+    @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
     public TaskDTO create(@Valid @RequestBody TaskCreateDTO taskData) {
         return service.create(taskData);

@@ -26,7 +26,7 @@ import jakarta.validation.Valid;
 public class TaskStatusController {
     private TaskStatusService service;
 
-    @GetMapping("")
+    @GetMapping()
     public ResponseEntity<List<TaskStatusDTO>> getAll() {
         var statuses = service.getAll();
         return ResponseEntity.ok()
@@ -40,7 +40,7 @@ public class TaskStatusController {
         return service.getById(id);
     }
 
-    @PostMapping("")
+    @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
     public TaskStatusDTO create(@Valid @RequestBody TaskStatusCreateDTO statusData) {
         return service.create(statusData);

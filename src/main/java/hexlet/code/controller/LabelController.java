@@ -26,7 +26,7 @@ import jakarta.validation.Valid;
 public class LabelController {
     private final LabelService service;
 
-    @GetMapping("")
+    @GetMapping()
     public ResponseEntity<List<LabelDTO>> getAll() {
         var labels = service.getAll();
         return ResponseEntity.ok()
@@ -40,7 +40,7 @@ public class LabelController {
         return service.getById(id);
     }
 
-    @PostMapping("")
+    @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
     public LabelDTO create(@Valid @RequestBody LabelCreateDTO labelData) {
         return service.create(labelData);

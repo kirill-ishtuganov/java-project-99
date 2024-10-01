@@ -30,7 +30,7 @@ public class UserController {
                 @userRepository.findById(#id).get().getEmail() == authentication.getName()
             """;
 
-    @GetMapping("")
+    @GetMapping()
     public ResponseEntity<List<UserDTO>> getAll() {
         var users = service.getAll();
         return ResponseEntity.ok()
@@ -44,7 +44,7 @@ public class UserController {
         return service.getById(id);
     }
 
-    @PostMapping("")
+    @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
     public UserDTO create(@Valid @RequestBody UserCreateDTO userData) {
         return service.create(userData);

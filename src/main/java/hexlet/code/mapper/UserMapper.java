@@ -16,6 +16,8 @@ import org.mapstruct.ReportingPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.List;
+
 
 @Mapper(
         uses = {JsonNullableMapper.class, ReferenceMapper.class},
@@ -26,7 +28,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public abstract class UserMapper {
     @Autowired
     private PasswordEncoder encoder;
-
+    @Mapping(target = "password", ignore = true)
+    public abstract List<UserDTO> map(List<User> users);
     @Mapping(target = "passwordDigest", source = "password")
     public abstract User map(UserCreateDTO model);
 

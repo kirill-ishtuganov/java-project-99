@@ -40,11 +40,6 @@ public abstract class TaskMapper {
     @Autowired
     private UserRepository userRepository;
 
-    @Mapping(source = "name", target = "title")
-    @Mapping(source = "description", target = "content")
-    @Mapping(source = "taskStatus.slug", target = "status")
-    @Mapping(source = "assignee.id", target = "assigneeId")
-    @Mapping(target = "taskLabelIds", source = "labels", qualifiedByName = "labelsToLabelsIds")
     public abstract List<TaskDTO> map(List<Task> tasks);
 
     @Mapping(source = "title", target = "name")
@@ -72,8 +67,7 @@ public abstract class TaskMapper {
 
     @Named("slugToTaskStatus")
     public TaskStatus slugToTaskStatus(String slug) {
-        return taskStatusRepository.findBySlug(slug).orElseThrow(
-                () -> new RuntimeException("TaskStatus with slug " + slug + " not found"));
+        return taskStatusRepository.findBySlug(slug).orElseThrow();
     }
 
     @Named("labelIdsToLabels")
@@ -82,7 +76,13 @@ public abstract class TaskMapper {
         if (labelIds == null || labelIds.isEmpty()) {
             return labels;
         } else {
-            labels = labelRepository.findByIdIn(labelIds);
+             labels = labelIds.stream()
+                     .map(id -> {
+                         var label = new Label();
+                         label.setId(id);
+                         return label;
+                     })
+                     .collect(Collectors.toSet());
         }
         return labels;
     }

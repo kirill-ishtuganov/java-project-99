@@ -28,7 +28,7 @@ import java.util.List;
 public abstract class UserMapper {
     @Autowired
     private PasswordEncoder encoder;
-    @Mapping(target = "password", ignore = true)
+
     public abstract List<UserDTO> map(List<User> users);
     @Mapping(target = "passwordDigest", source = "password")
     public abstract User map(UserCreateDTO model);
